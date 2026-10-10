@@ -1,44 +1,57 @@
-# SG-Gateway Releases
+# SG-Gateway 23.05
 
-Official public release channel for SG-Gateway.
+**Новые возможности по сравнению с SG-Gateway 23.01**
 
-This repository contains **release artifacts and public bootstrap scripts only**. The SG-Gateway development repository is private and is not published here.
+SG-Gateway — серверная панель управления сетевыми подключениями. В версии **23.05** главное нововведение — **Cascade**, система двухсерверной маршрутизации с выбором транспорта между серверами.
 
-## Current release
+## 1. Cascade: два сервера в одной цепочке
 
-**SG-Gateway 23.03** — `v0.1.0-023.03`
+**Клиент → Gateway A → Gateway B → Интернет**
 
-Release assets:
-- `SG-Gateway-0.1.0-023.03-FULL.run`
-- `SG-Gateway-0.1.0-023.03-FULL-SHA256.txt`
-- `SG-Gateway-0.1.0-023.03-FULL-TRANSFER.zip`
+- **Gateway A** принимает подключения телефонов, компьютеров и других клиентов.
+- **Gateway B** принимает соединение от Gateway A и обеспечивает выход в интернет.
+- Протокол клиента до Gateway A может отличаться от протокола связи между A и B.
+- Gateway B может находиться у другого провайдера или в другой стране.
+- Настройка выполняется в панели: подготовка конфигурации на B и её импорт на A.
 
-Source provenance: private build SHA `7588dc220c0d3fe15a836659a91e24e35dd247ac`.
+## 2. Четыре канала Cascade с управлением приоритетом
 
-The public package contains a protected Python runtime payload rather than readable application Python source. Runtime files and the release package are SHA-256 verified before installation.
+Новая страница Cascade показывает **10 профилей**, из которых **9 транспортов реализованы**, а **SG-Net пока зарезервирован**:
 
-## Clean Install
+Reality TCP, XHTTP Reality, AmneziaWG 3.1, Mieru, XHTTP TLS, Hysteria 2, AnyTLS, TUIC, NaiveProxy; резерв — SG-Net.
 
-```bash
-curl -4 -fsSL https://raw.githubusercontent.com/s-gor/sg-gateway-release/main/install.sh | sudo bash
-```
+- Gateway A выбирает **ровно четыре доступных канала** и их приоритет перетаскиванием.
+- Добавлены проверки доступности каналов с отображением состояний «ГОТОВ», «АКТИВЕН» и ошибок.
+- Для текущего маршрута используется **один активный канал** из готовых, а не суммарная пропускная способность четырёх.
+- TLS-зависимые транспорты требуют подготовленного HTTPS на Gateway B.
 
-## Update
+## 3. Синхронизация двух серверов
 
-```bash
-curl -4 -fsSL https://raw.githubusercontent.com/s-gor/sg-gateway-release/main/update.sh | sudo bash
-```
+Gateway B показывает полученные от Gateway A сведения: четыре выбранных канала, приоритет, активный транспорт, состояние связи и время последнего обновления. Управление приоритетом остаётся на Gateway A.
 
-## Full Uninstall
+## 4. Cascade в Routing
 
-```bash
-curl -4 -fsSL https://raw.githubusercontent.com/s-gor/sg-gateway-release/main/uninstall.sh | sudo bash
-```
+Добавлены выходы **«Каскад · IPv4»** и **«Каскад · IPv6»**, а также готовые схемы:
 
-## Integrity
+- **Ресурсы, заблокированные в РФ, через Каскад**.
+- **Весь интернет через Каскад**.
 
-SHA-256 for `SG-Gateway-0.1.0-023.03-FULL.run`:
+Каскад можно использовать и в пользовательских правилах. Готовность IPv4 и IPv6 проверяется отдельно. **Автоматического перехода на Direct** для правила Cascade при недоступности второго сервера нет.
 
-`fcb007eed7f9a43a5a3f1049d0d194c6d7a6f8e346d805ca11aef5806b15a233`
+## 5. Принудительный перезапуск служб из Connections
 
-The bootstrap verifies this checksum and runs the package's internal `--verify-only` check before installation.
+В Connections добавлены команды перезапуска Xray, Mieru/Mihomo, AnyTLS/TUIC, NaiveProxy, AmneziaWG 3.1, Cascade и всех активных служб. Перезапуск может кратковременно прервать текущие соединения.
+
+## 6. Автоматическая подготовка SWAP в установщике RUN06
+
+На машинах с небольшим объёмом RAM установщик может создать SWAP **2 ГБ**, если активного SWAP ещё нет. Уже настроенный активный SWAP не перезаписывается.
+
+## Руководство Cascade
+
+**[Cascade: назначение, настройка Gateway A/B, четыре канала, Routing и диагностика](CASCADE.md)**
+
+## Статус версии
+
+**23.05 — публичная тестовая версия.** Чистая установка RUN06 проверена на VMware с Ubuntu 26.04.1 LTS. Не все комбинации протоколов и сценарии восстановления связи проверены на реальных серверах.
+
+Этот публичный репозиторий содержит **описание возможностей**, а не исходный код приложения или актуальный установщик. Инструкция по установке распространяется отдельно на форуме.
